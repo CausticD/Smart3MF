@@ -18,6 +18,15 @@
 				<metadata name="cura:wall_thickness">0</metadata>
 			</metadatagroup>
 		</addmodel>
+		<addmodel>
+			<name>Support2</name>
+			<cmdparam key="sub_model" value="Cube2"/>
+			<metadatagroup namespace="xmlns:cura" url="http://software.ultimaker.com/xml/cura/3mf/2015/10">
+				<metadata name="cura:anti_overhang_mesh">True</metadata>
+				<metadata name="cura:top_bottom_thickness">0</metadata>
+				<metadata name="cura:wall_thickness">0</metadata>
+			</metadatagroup>
+		</addmodel>
 		<addthumbnail>
 			<cmdparam key="sub_model" value="Hook"/>
 			<imgsize>256,256</imgsize>

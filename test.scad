@@ -1,4 +1,4 @@
-sub_model = "All"; // [All,Hook,Cube1]
+sub_model = "All"; // [All,Hook,Cube1,Cube2]
 
 hole_size = 25/2;
 center_size = 35/2;
@@ -42,4 +42,9 @@ if(sub_model=="All" || sub_model=="Hook")
 if(sub_model=="All" || sub_model=="Cube1")
 {
     cube([5, 5, 5], center = true);
+}
+
+if(sub_model=="All" || sub_model=="Cube2")
+{
+    cube([15, 2, 2], center = true);
 }

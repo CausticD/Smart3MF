@@ -10,6 +10,10 @@ import xml.etree.ElementTree as ET
 openscadexec = "openscad.bat"
 openscadexec2 = "openscad2.bat"								# Used for when we also have a -D param
 
+hardcoded_modelpath = "3D/3dmodel.model"
+hardcoded_relsfile = '_rels/.rels'
+hardcoded_metadatathumb = '/Metadata/thumbnail.png'
+
 def GetInputFiles(configroot):
 	sourceroot = configroot.find('source')
 	input_scad = sourceroot.find('scad').text
@@ -43,6 +47,8 @@ def ExtractObject(file, newid, newname):
 	modelroot = ET.parse(file).getroot()
 	resources = modelroot.find('{'+my_namespaces['']+'}'+'resources') # Passing in my_namespaces as the second param doesn't help
 	
+	# Set the new id number and name.
+	
 	for object in resources:
 		object.set('id', newid)
 		object.set('name', newname)
@@ -50,7 +56,6 @@ def ExtractObject(file, newid, newname):
 	return resources[0]
 
 def WriteCombinedFile(file, newobjects):
-	print(file)
 	my_namespaces = ReadNamespaces(file)
 	
 	ET.register_namespace('', my_namespaces[''])
@@ -60,8 +65,6 @@ def WriteCombinedFile(file, newobjects):
 	base.parse(file)
 	modelroot = base.getroot()
 	resources = modelroot.find('{'+my_namespaces['']+'}'+'resources') # Passing in my_namespaces as the second param doesn't help
-
-	print(newobjects)
 
 	for newobj in newobjects:
 		resources.insert(len(resources), newobj)		# Insert at the end
@@ -83,16 +86,15 @@ def ProcessSteps(steps, folder):
 	key = base.find('cmdparam').get('key')
 	value = base.find('cmdparam').get('value')
 	stepfileout = key + "_" + value + ".3mf"
-	print('Base', key, value, stepfileout, input_scad)
 	ExportStep(key, value, stepfileout, input_scad)
-	print(str(count), base.find('name').text)
 	
 	# Now to extract all files to an empty temp directory.
 	
-	print(stepfileout, folder)
 	
 	with zipfile.ZipFile(stepfileout, 'r') as myzip:
 		myzip.extractall(path=folder)
+	
+	os.remove(stepfileout)
 	
 	count += 1
 	
@@ -108,25 +110,55 @@ def ProcessSteps(steps, folder):
 		# We now have a 3mf aka a zip file. We need to extract that.
 		
 		with zipfile.ZipFile(stepfileout, 'r') as myzip:
-			with myzip.open('3D/3dmodel.model') as myfile:
+			with myzip.open(hardcoded_modelpath) as myfile:
 				newobj = ExtractObject(myfile, str(count), step.find('name').text)
 				count += 1
 				models.append(newobj)
+				
+		# Delete the 3mf file as we have got what we need.
+		
+		os.remove(stepfileout)
 		
 	print('Models', len(models))
 	
-	WriteCombinedFile(folder+"/3D/3dmodel.model", models)
+	WriteCombinedFile(folder+"/"+hardcoded_modelpath, models)
 	
 def GenThumbnail(root, dest):
 	print('Thumb', dest)
 	imgsize = thumbnailroot.find('imgsize').text
 	camera = thumbnailroot.find('camera').text
-	print('Thumb', imgsize, camera)
+	#print('Thumb', imgsize, camera)
 	
 	cmd = openscadexec + " -o " + dest + 'thumbnail.png' + " --imgsize "+imgsize+" --camera "+camera+" --viewall " + input_scad
-	print(cmd)
+	#print(cmd)
 	os.makedirs(os.path.dirname(dest), exist_ok=True)
 	os.system(cmd)
+
+def UpdateRelsFile(file):
+	# Check the existing rels file
+	found = False
+	
+	ET.register_namespace('', 'http://schemas.openxmlformats.org/package/2006/relationships')
+	
+	base = ET.ElementTree()
+	base.parse(file)
+	root = base.getroot()
+	
+	for child in root:
+		target = child.get('Target')
+		if target == hardcoded_metadatathumb:
+			found = True
+			
+	# If the rels file doesn't have the line mentioning the thumbnail, add the line and overwrite.
+	
+	if not found:
+		newnode = ET.Element('Relationship')
+		newnode.set("Target", hardcoded_metadatathumb)
+		newnode.set("Id","rel-2")			# No idea what this is for.
+		newnode.set("Type","http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail")
+		
+		root.insert(len(root), newnode)		# Insert at the end
+		base.write(file, encoding='UTF-8', xml_declaration=True)
 
 def ZipFolder(targetfile, sourcefolder):
 	with zipfile.ZipFile(targetfile, 'w') as zipObj:
@@ -167,6 +199,7 @@ with tempfile.TemporaryDirectory() as tempfolder:
 
 	if thumbnailroot:
 		GenThumbnail(thumbnailroot, tempfolder+'/Metadata/')
+		UpdateRelsFile(tempfolder+'/'+hardcoded_relsfile)
 
 	# Everything should be ready, so zip up the temp folder.
 	ZipFolder(output_3mf, tempfolder)
