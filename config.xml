@@ -1,0 +1,27 @@
+<smart3mf>
+	<source>
+		<scad>test.scad</scad>
+		<!--<params>qrcode.json</params>
+		<preset>Defaults</preset>-->
+	</source>
+	<export file="qrcode.3mf">
+		<base>
+			<name>Hook</name>
+			<cmdparam key="sub_model" value="Hook"/>
+		</base>
+		<addmodel>
+			<name>Support1</name>
+			<cmdparam key="sub_model" value="Cube1"/>
+			<metadatagroup namespace="xmlns:cura" url="http://software.ultimaker.com/xml/cura/3mf/2015/10">
+				<metadata name="cura:anti_overhang_mesh">True</metadata>
+				<metadata name="cura:top_bottom_thickness">0</metadata>
+				<metadata name="cura:wall_thickness">0</metadata>
+			</metadatagroup>
+		</addmodel>
+		<addthumbnail>
+			<cmdparam key="sub_model" value="Hook"/>
+			<imgsize>256,256</imgsize>
+			<camera>0,0,0,0,0,0,10</camera>
+		</addthumbnail>
+	</export>
+</smart3mf>
