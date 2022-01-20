@@ -1,0 +1,1 @@
+c:\Python39\python smart3mf.py
