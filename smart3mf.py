@@ -47,35 +47,45 @@ def ExtractObject(file, newid, newname):
 	modelroot = ET.parse(file).getroot()
 	resources = modelroot.find('{'+my_namespaces['']+'}'+'resources') # Passing in my_namespaces as the second param doesn't help
 	
-	# Set the new id number and name.
+	# Set the new id number and name. TODO: Check if there is more than one. That would cause issues!
 	
 	for object in resources:
 		object.set('id', newid)
 		object.set('name', newname)
 
 	return resources[0]
+	
+def AddMetaDataGroup(object, addmodeltag):
+	mdgtag = addmodeltag.find('metadatagroup')
+	
+	if mdgtag:
+		object.insert(0, mdgtag)
 
 def WriteCombinedFile(steps, file, newobjects):
+	basetag = steps.find('base')
 	my_namespaces = ReadNamespaces(file)
 	
 	ET.register_namespace('', my_namespaces[''])
 
-	# Read file and save the <object>
+	# Read the primary file.
 	base = ET.ElementTree()
 	base.parse(file)
 	modelroot = base.getroot()
 	resources = modelroot.find('{'+my_namespaces['']+'}'+'resources') # Passing in my_namespaces as the second param doesn't help
+	
+	# Add any meta data
+	AddMetaDataGroup(resources[0], basetag)
 
 	for newobj in newobjects:
 		resources.insert(len(resources), newobj)		# Insert at the end
 		
-	# TODO: Must update the <build> tag contents.
+	# Update the <build> tag contents.
 	
 	build = modelroot.find('{'+my_namespaces['']+'}'+'build') # Passing in my_namespaces as the second param doesn't help
-	basetag = steps.find('base')
+	
 	
 	for extobj in build:
-		print('1=====>', extobj.get('id'), extobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		#print('1=====>', extobj.get('id'), extobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
 		extobj.set("transform", basetag.find('transform').text)
 
 	addmodels = steps.findall('addmodel')
@@ -86,11 +96,13 @@ def WriteCombinedFile(steps, file, newobjects):
 		newnode.set("objectid", newobj.get('id'))
 		trans = addmodels[index].find('transform').text
 		newnode.set("transform", trans)
-		print('2=====>', newobj.get('id'), newobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		#print('2=====>', newobj.get('id'), newobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
 		
 		build.insert(len(build), newnode)		# Insert at the end
 		
 		index += 1
+	
+	# Done. Write it out.
 	
 	base.write(file, encoding='UTF-8', xml_declaration=True)
 
@@ -134,6 +146,7 @@ def ProcessSteps(steps, folder):
 		with zipfile.ZipFile(stepfileout, 'r') as myzip:
 			with myzip.open(hardcoded_modelpath) as myfile:
 				newobj = ExtractObject(myfile, str(count), step.find('name').text)
+				AddMetaDataGroup(newobj, step)
 				count += 1
 				models.append(newobj)
 				
