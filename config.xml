@@ -8,10 +8,12 @@
 		<base>
 			<name>Hook</name>
 			<cmdparam key="sub_model" value="Hook"/>
+			<transform>1.0 0.0 0.0 0.0 1.0 0 0.0 0 1.0 110.0 110.0 4.5</transform>
 		</base>
 		<addmodel>
 			<name>Support1</name>
 			<cmdparam key="sub_model" value="Cube1"/>
+			<transform>1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 110.0 110.0 2.5</transform>
 			<metadatagroup namespace="xmlns:cura" url="http://software.ultimaker.com/xml/cura/3mf/2015/10">
 				<metadata name="cura:anti_overhang_mesh">True</metadata>
 				<metadata name="cura:top_bottom_thickness">0</metadata>
@@ -21,6 +23,7 @@
 		<addmodel>
 			<name>Support2</name>
 			<cmdparam key="sub_model" value="Cube2"/>
+			<transform>1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 110.0 110.0 1.0</transform>
 			<metadatagroup namespace="xmlns:cura" url="http://software.ultimaker.com/xml/cura/3mf/2015/10">
 				<metadata name="cura:anti_overhang_mesh">True</metadata>
 				<metadata name="cura:top_bottom_thickness">0</metadata>

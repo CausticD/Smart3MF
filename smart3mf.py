@@ -55,7 +55,7 @@ def ExtractObject(file, newid, newname):
 
 	return resources[0]
 
-def WriteCombinedFile(file, newobjects):
+def WriteCombinedFile(steps, file, newobjects):
 	my_namespaces = ReadNamespaces(file)
 	
 	ET.register_namespace('', my_namespaces[''])
@@ -68,6 +68,29 @@ def WriteCombinedFile(file, newobjects):
 
 	for newobj in newobjects:
 		resources.insert(len(resources), newobj)		# Insert at the end
+		
+	# TODO: Must update the <build> tag contents.
+	
+	build = modelroot.find('{'+my_namespaces['']+'}'+'build') # Passing in my_namespaces as the second param doesn't help
+	basetag = steps.find('base')
+	
+	for extobj in build:
+		print('1=====>', extobj.get('id'), extobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		extobj.set("transform", basetag.find('transform').text)
+
+	addmodels = steps.findall('addmodel')
+	index = 0
+	
+	for newobj in newobjects:
+		newnode = ET.Element('item')
+		newnode.set("objectid", newobj.get('id'))
+		trans = addmodels[index].find('transform').text
+		newnode.set("transform", trans)
+		print('2=====>', newobj.get('id'), newobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		
+		build.insert(len(build), newnode)		# Insert at the end
+		
+		index += 1
 	
 	base.write(file, encoding='UTF-8', xml_declaration=True)
 
@@ -89,7 +112,6 @@ def ProcessSteps(steps, folder):
 	ExportStep(key, value, stepfileout, input_scad)
 	
 	# Now to extract all files to an empty temp directory.
-	
 	
 	with zipfile.ZipFile(stepfileout, 'r') as myzip:
 		myzip.extractall(path=folder)
@@ -118,19 +140,15 @@ def ProcessSteps(steps, folder):
 		# Delete the 3mf file as we have got what we need.
 		
 		os.remove(stepfileout)
-		
-	print('Models', len(models))
 	
-	WriteCombinedFile(folder+"/"+hardcoded_modelpath, models)
+	return models
 	
 def GenThumbnail(root, dest):
 	print('Thumb', dest)
 	imgsize = thumbnailroot.find('imgsize').text
 	camera = thumbnailroot.find('camera').text
-	#print('Thumb', imgsize, camera)
 	
 	cmd = openscadexec + " -o " + dest + 'thumbnail.png' + " --imgsize "+imgsize+" --camera "+camera+" --viewall " + input_scad
-	#print(cmd)
 	os.makedirs(os.path.dirname(dest), exist_ok=True)
 	os.system(cmd)
 
@@ -158,7 +176,7 @@ def UpdateRelsFile(file):
 		newnode.set("Type","http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail")
 		
 		root.insert(len(root), newnode)		# Insert at the end
-		base.write(file, encoding='UTF-8', xml_declaration=True)
+		base.write(file, encoding='UTF-8', xml_declaration=True)			# Might be something I can do here with the default_namespace param
 
 def ZipFolder(targetfile, sourcefolder):
 	with zipfile.ZipFile(targetfile, 'w') as zipObj:
@@ -167,6 +185,7 @@ def ZipFolder(targetfile, sourcefolder):
 				filePath = os.path.join(folderName, filename)
 				destpath = filePath[len(sourcefolder):]
 				zipObj.write(filePath, destpath, compress_type=zipfile.ZIP_DEFLATED)
+	
 	print('Output:', targetfile)
 
 # Run the OpenSCAD executable with the version param. Should spit out a single line like 'OpenSCAD version 2021.01' to
@@ -192,7 +211,8 @@ with tempfile.TemporaryDirectory() as tempfolder:
 	steps = configroot.find('export')
 
 	if steps:
-		ProcessSteps(steps, tempfolder)
+		models = ProcessSteps(steps, tempfolder)
+		WriteCombinedFile(steps, tempfolder+"/"+hardcoded_modelpath, models)
 		
 	# Thumbnail
 	thumbnailroot = steps.find('addthumbnail')
