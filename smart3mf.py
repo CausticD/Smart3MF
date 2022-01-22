@@ -1,6 +1,7 @@
 import os
 import zipfile
 import tempfile
+import argparse
 import xml.etree.ElementTree as ET
 
 # Running the exe or the com file directly is fine, but I could not get the -D param to work :( without resorting to a
@@ -110,7 +111,7 @@ def ExportStep(key, value, stepfileout, input_scad):
 	cmd = openscadexec2 + " " + key + " " + value + " -o " + stepfileout + " " + input_scad
 	ret = os.system(cmd)
 
-def ProcessSteps(steps, folder):
+def ProcessSteps(steps, folder, input):
 	models = []
 	count = 1
 	
@@ -121,7 +122,7 @@ def ProcessSteps(steps, folder):
 	key = base.find('cmdparam').get('key')
 	value = base.find('cmdparam').get('value')
 	stepfileout = key + "_" + value + ".3mf"
-	ExportStep(key, value, stepfileout, input_scad)
+	ExportStep(key, value, stepfileout, input)
 	
 	# Now to extract all files to an empty temp directory.
 	
@@ -138,8 +139,8 @@ def ProcessSteps(steps, folder):
 		key = step.find('cmdparam').get('key')
 		value = step.find('cmdparam').get('value')
 		stepfileout = key + "_" + value + ".3mf"
-		print('Adding', key, value, stepfileout, input_scad)
-		ExportStep(key, value, stepfileout, input_scad)
+		print('Adding', key, value, stepfileout, input)
+		ExportStep(key, value, stepfileout, input)
 		
 		# We now have a 3mf aka a zip file. We need to extract that.
 		
@@ -201,6 +202,14 @@ def ZipFolder(targetfile, sourcefolder):
 	
 	print('Output:', targetfile)
 
+######
+# MAIN
+######
+
+parser = argparse.ArgumentParser(description='3MF file manipulator')
+parser.add_argument('settingsxml', help='Your settings xml file')
+args = parser.parse_args()
+
 # Run the OpenSCAD executable with the version param. Should spit out a single line like 'OpenSCAD version 2021.01' to
 # check that the path is correct and abort straight away if not found. 
 
@@ -211,7 +220,7 @@ if ret != 0:
 	
 # Load the config XML file and get essential info from that.
 
-configroot = ET.parse("config.xml").getroot()
+configroot = ET.parse(args.settingsxml).getroot()
 
 # Lets get the input and output files.
 
@@ -224,7 +233,7 @@ with tempfile.TemporaryDirectory() as tempfolder:
 	steps = configroot.find('export')
 
 	if steps:
-		models = ProcessSteps(steps, tempfolder)
+		models = ProcessSteps(steps, tempfolder, input_scad)
 		WriteCombinedFile(steps, tempfolder+"/"+hardcoded_modelpath, models)
 		
 	# Thumbnail

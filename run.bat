@@ -1,1 +1,1 @@
-c:\Python39\python smart3mf.py
+c:\Python39\python smart3mf.py config.xml
