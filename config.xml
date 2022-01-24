@@ -1,41 +1,35 @@
 <smart3mf>
-	<source>
-		<scad>test.scad</scad>
-		<!--<params>qrcode.json</params>
-		<preset>Defaults</preset>-->
-	</source>
 	<export file="qrcode.3mf">
 		<base>
 			<name>Hook</name>
-			<cmdparam key="sub_model" value="Hook"/>
+			<scad file="test.scad" key="sub_model" value="Hook"/>    <!-- params="qrcode.json" preset="Defaults" -->
 			<transform>1.0 0.0 0.0 0.0 1.0 0 0.0 0 1.0 110.0 110.0 4.5</transform>
 			<metadatagroup>
 				<metadata name="cura:top_bottom_thickness">0</metadata>
 				<metadata name="cura:wall_thickness">0</metadata>
 			</metadatagroup>
 		</base>
-		<addmodel>
+		<model>
 			<name>Support1</name>
-			<cmdparam key="sub_model" value="Cube1"/>
+			<scad file="test.scad" key="sub_model" value="Cube1"/>
 			<transform>1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 110.0 110.0 2.5</transform>
 			<metadatagroup>
 				<metadata name="cura:anti_overhang_mesh">True</metadata>
 				<!--<metadata name="cura:support_mesh">True</metadata>-->
 			</metadatagroup>
-		</addmodel>
-		<addmodel>
+		</model>
+		<model>
 			<name>Support2</name>
-			<cmdparam key="sub_model" value="Cube2"/>
+			<scad file="test.scad" key="sub_model" value="Cube2"/>
 			<transform>1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 110.0 110.0 1.0</transform>
 			<metadatagroup>
 				<metadata name="cura:top_bottom_thickness">0</metadata>
 				<metadata name="cura:wall_thickness">0</metadata>
 			</metadatagroup>
-		</addmodel>
-		<addthumbnail>
-			<cmdparam key="sub_model" value="Hook"/>
-			<imgsize>256,256</imgsize>
-			<camera>0,0,0,0,0,0,10</camera>
-		</addthumbnail>
+		</model>
+		<thumbnail>
+			<!--<image file=""/>-->
+			<scad file="test.scad" key="sub_model" value="Hook" imgsize="256,256" camera="0,0,0,0,0,0,10"/>
+		</thumbnail>
 	</export>
 </smart3mf>

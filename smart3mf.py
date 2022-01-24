@@ -15,17 +15,16 @@ hardcoded_modelpath = "3D/3dmodel.model"
 hardcoded_relsfile = '_rels/.rels'
 hardcoded_metadatathumb = '/Metadata/thumbnail.png'
 
-def GetInputFiles(configroot):
-	sourceroot = configroot.find('source')
-	input_scad = sourceroot.find('scad').text
+def GetSCADInputFiles(scad_tag):
+	input_scad = scad_tag.get('file')
 
 	# Check to see if we use the params and presets file and options.
 
-	if sourceroot.find('params') != None:
-		input_scad = "-p " + sourceroot.find('params').text + " " + input_scad
+	if scad_tag.get('params') != None:
+		input_scad = "-p " + scad_tag.get('params') + " " + input_scad
 		
-	if sourceroot.find('preset') != None:
-		input_scad = "-P " + sourceroot.find('preset').text + " " + input_scad
+	if scad_tag.get('preset') != None:
+		input_scad = "-P " + scad_tag.get('preset') + " " + input_scad
 		
 	return input_scad
 	
@@ -51,7 +50,7 @@ def ExtractObject(file, newid, newname):
 	# Set the new id number and name. TODO: Check if there is more than one. That would cause issues!
 	
 	for object in resources:
-		object.set('id', newid)
+		object.set('id', str(newid))
 		object.set('name', newname)
 
 	return resources[0]
@@ -78,18 +77,18 @@ def WriteCombinedFile(steps, file, newobjects):
 	AddMetaDataGroup(resources[0], basetag)
 
 	for newobj in newobjects:
-		resources.insert(len(resources), newobj)		# Insert at the end
+		idx = len(resources)
+		resources.insert(idx, newobj)		# Insert at the end
 		
 	# Update the <build> tag contents.
 	
 	build = modelroot.find('{'+my_namespaces['']+'}'+'build') # Passing in my_namespaces as the second param doesn't help
 	
-	
 	for extobj in build:
-		#print('1=====>', extobj.get('id'), extobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		print('1=====>', extobj.get('objectid'), extobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
 		extobj.set("transform", basetag.find('transform').text)
 
-	addmodels = steps.findall('addmodel')
+	addmodels = steps.findall('model')
 	index = 0
 	
 	for newobj in newobjects:
@@ -97,12 +96,12 @@ def WriteCombinedFile(steps, file, newobjects):
 		newnode.set("objectid", newobj.get('id'))
 		trans = addmodels[index].find('transform').text
 		newnode.set("transform", trans)
-		#print('2=====>', newobj.get('id'), newobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		print('2=====>', newobj.get('id'), newobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
 		
 		build.insert(len(build), newnode)		# Insert at the end
 		
 		index += 1
-	
+
 	# Done. Write it out.
 	
 	base.write(file, encoding='UTF-8', xml_declaration=True)
@@ -111,58 +110,61 @@ def ExportStep(key, value, stepfileout, input_scad):
 	cmd = openscadexec2 + " " + key + " " + value + " -o " + stepfileout + " " + input_scad
 	ret = os.system(cmd)
 
-def ProcessSteps(steps, folder, input):
+def ProcessStep(step, folder, models, extractall):
+	scad_tag = step.find('scad')
+	key = scad_tag.get('key')
+	value = scad_tag.get('value')
+	stepfileout = key + "_" + value + ".3mf"			# Temp file
+	input = GetSCADInputFiles(scad_tag)
+	ExportStep(key, value, stepfileout, input)
+	
+	# Now to extract all files to an empty temp directory.
+	
+	if extractall:
+		with zipfile.ZipFile(stepfileout, 'r') as myzip:
+			myzip.extractall(path=folder)
+	
+		os.remove(stepfileout)
+	else:
+		# We now have a 3mf aka a zip file. We need to extract that.
+		
+		with zipfile.ZipFile(stepfileout, 'r') as myzip:
+			with myzip.open(hardcoded_modelpath) as myfile:
+				newobj = ExtractObject(myfile, len(models)+1, step.find('name').text)
+				AddMetaDataGroup(newobj, step)
+				models.append(newobj)
+				
+		# Delete the 3mf file as we have got what we need.
+		
+		os.remove(stepfileout)
+
+		return 
+
+def ProcessSteps(steps, folder):
 	models = []
 	count = 1
 	
 	# Export the base model first.
 	
 	base = steps.find('base')
-	
-	key = base.find('cmdparam').get('key')
-	value = base.find('cmdparam').get('value')
-	stepfileout = key + "_" + value + ".3mf"
-	ExportStep(key, value, stepfileout, input)
-	
-	# Now to extract all files to an empty temp directory.
-	
-	with zipfile.ZipFile(stepfileout, 'r') as myzip:
-		myzip.extractall(path=folder)
-	
-	os.remove(stepfileout)
-	
+
+	ProcessStep(base, folder, models, True)
+
 	count += 1
 	
 	# Now export all the models to add to the base one.
 	
-	for step in steps.findall('addmodel'):
-		key = step.find('cmdparam').get('key')
-		value = step.find('cmdparam').get('value')
-		stepfileout = key + "_" + value + ".3mf"
-		print('Adding', key, value, stepfileout, input)
-		ExportStep(key, value, stepfileout, input)
-		
-		# We now have a 3mf aka a zip file. We need to extract that.
-		
-		with zipfile.ZipFile(stepfileout, 'r') as myzip:
-			with myzip.open(hardcoded_modelpath) as myfile:
-				newobj = ExtractObject(myfile, str(count), step.find('name').text)
-				AddMetaDataGroup(newobj, step)
-				count += 1
-				models.append(newobj)
-				
-		# Delete the 3mf file as we have got what we need.
-		
-		os.remove(stepfileout)
+	for step in steps.findall('model'):
+		ProcessStep(step, folder, models, False)
+		count += 1
 	
 	return models
 	
-def GenThumbnail(root, dest):
-	print('Thumb', dest)
-	imgsize = thumbnailroot.find('imgsize').text
-	camera = thumbnailroot.find('camera').text
+def GenThumbnailFromSCAD(root, dest):
+	imgsize = root.get('imgsize')
+	camera = root.get('camera')
 	
-	cmd = openscadexec + " -o " + dest + 'thumbnail.png' + " --imgsize "+imgsize+" --camera "+camera+" --viewall " + input_scad
+	cmd = openscadexec + " -o " + dest + 'thumbnail.png' + " --imgsize "+imgsize+" --camera "+camera+" --viewall " + GetSCADInputFiles(root)
 	os.makedirs(os.path.dirname(dest), exist_ok=True)
 	os.system(cmd)
 
@@ -224,7 +226,6 @@ configroot = ET.parse(args.settingsxml).getroot()
 
 # Lets get the input and output files.
 
-input_scad = GetInputFiles(configroot)
 output_3mf = GetOutputFiles(configroot)
 
 # Check for a multi-stage output system, which is basically the reason to use this system.
@@ -232,15 +233,21 @@ output_3mf = GetOutputFiles(configroot)
 with tempfile.TemporaryDirectory() as tempfolder:
 	steps = configroot.find('export')
 
-	if steps:
-		models = ProcessSteps(steps, tempfolder, input_scad)
-		WriteCombinedFile(steps, tempfolder+"/"+hardcoded_modelpath, models)
+	if not steps:
+		print('Config file error. No export steps')
+		quit()
+
+	models = ProcessSteps(steps, tempfolder)
+	WriteCombinedFile(steps, tempfolder+"/"+hardcoded_modelpath, models)
 		
 	# Thumbnail
-	thumbnailroot = steps.find('addthumbnail')
+	thumbnailroot = steps.find('thumbnail')
 
 	if thumbnailroot:
-		GenThumbnail(thumbnailroot, tempfolder+'/Metadata/')
+		scad_tag = thumbnailroot.find('scad')
+
+		if scad_tag:
+			GenThumbnailFromSCAD(scad_tag, tempfolder+'/Metadata/')
 		UpdateRelsFile(tempfolder+'/'+hardcoded_relsfile)
 
 	# Everything should be ready, so zip up the temp folder.
