@@ -1,4 +1,5 @@
 import os
+import shutil
 import zipfile
 import tempfile
 import argparse
@@ -168,6 +169,13 @@ def GenThumbnailFromSCAD(root, dest):
 	os.makedirs(os.path.dirname(dest), exist_ok=True)
 	os.system(cmd)
 
+def CopyThumbnail(root, dest):
+	filename = root.get('file')
+
+	os.makedirs(os.path.dirname(dest), exist_ok=True)
+
+	shutil.copyfile(filename, dest + 'thumbnail.png')
+
 def UpdateRelsFile(file):
 	# Check the existing rels file
 	found = False
@@ -240,14 +248,20 @@ with tempfile.TemporaryDirectory() as tempfolder:
 	models = ProcessSteps(steps, tempfolder)
 	WriteCombinedFile(steps, tempfolder+"/"+hardcoded_modelpath, models)
 		
-	# Thumbnail
+	# Thumbnail (Optional). If present, two options, either generate one using SCAD, or
+	# just use one provided as is.
+
 	thumbnailroot = steps.find('thumbnail')
 
 	if thumbnailroot:
-		scad_tag = thumbnailroot.find('scad')
+		scad_tag = thumbnailroot.find('scad')		# Generate thumbnail from SCAD fast render.
+		image_tag = thumbnailroot.find('image')		# Image file provided. Use that.
 
-		if scad_tag:
+		if scad_tag != None:
 			GenThumbnailFromSCAD(scad_tag, tempfolder+'/Metadata/')
+		elif image_tag != None:
+			CopyThumbnail(image_tag, tempfolder+'/Metadata/')
+		
 		UpdateRelsFile(tempfolder+'/'+hardcoded_relsfile)
 
 	# Everything should be ready, so zip up the temp folder.

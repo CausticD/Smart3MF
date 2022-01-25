@@ -28,8 +28,8 @@
 			</metadatagroup>
 		</model>
 		<thumbnail>
-			<!--<image file=""/>-->
-			<scad file="test.scad" key="sub_model" value="Hook" imgsize="256,256" camera="0,0,0,0,0,0,10"/>
+			<image file="qrcode.png"/>
+			<!--<scad file="test.scad" key="sub_model" value="Hook" imgsize="256,256" camera="0,0,0,0,0,0,10"/>-->
 		</thumbnail>
 	</export>
 </smart3mf>
