@@ -27,6 +27,15 @@
 				<metadata name="cura:wall_thickness">0</metadata>
 			</metadatagroup>
 		</model>
+		<model>
+			<name>Support3</name>
+			<threemf file="qrcode.3mf"/>
+			<transform>1.0 0.0 0.0 0.0 0.0 -1.0 0.0 1.0 0.0 110.0 110.0 1.0</transform>
+			<metadatagroup>
+				<metadata name="cura:top_bottom_thickness">0</metadata>
+				<metadata name="cura:wall_thickness">0</metadata>
+			</metadatagroup>
+		</model>
 		<thumbnail>
 			<image file="qrcode.png"/>
 			<!--<scad file="test.scad" key="sub_model" value="Hook" imgsize="256,256" camera="0,0,0,0,0,0,10"/>-->

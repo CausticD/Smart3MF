@@ -8,6 +8,11 @@ import xml.etree.ElementTree as ET
 # Running the exe or the com file directly is fine, but I could not get the -D param to work :( without resorting to a
 # batch file, so going with it.
 
+# Thoughts:
+# - I wanted a way to add a filament change. Cura does save this in a 3MF if you use the export project option, which saves a 3MF
+#   with loads of extra settings. If you look in the '\Cura\Ender-3\Ender-3Pro\Ender-3-3S.global.cfg' is does list the active
+#   post processing scripts, one of which can be a 'Filament change at layer'. So, use one such 3MF file as the base.
+
 #openscadexec = '"C:\Program Files\OpenSCAD\openscad.com"'	# Works fine except when wanting the -D param!
 openscadexec = "openscad.bat"
 openscadexec2 = "openscad2.bat"								# Used for when we also have a -D param
@@ -57,7 +62,17 @@ def ExtractObject(file, newid, newname):
 	return resources[0]
 	
 def AddMetaDataGroup(object, addmodeltag):
-	mdgtag = addmodeltag.find('metadatagroup')
+	mdgtag = addmodeltag.find('metadatagroup')		# This is the one from the config xml file.
+
+	dest = object.find('{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}'+'metadatagroup')
+
+	print(object.tag, object.attrib)
+
+	for child in object:
+		print(child.tag)
+
+	if dest is not None:
+		print(mdgtag, dest)
 	
 	if mdgtag:
 		object.insert(0, mdgtag)
@@ -81,12 +96,12 @@ def WriteCombinedFile(steps, file, newobjects):
 		idx = len(resources)
 		resources.insert(idx, newobj)		# Insert at the end
 		
-	# Update the <build> tag contents.
+	# Update the <build> tag contents at the end of the 3dmodel.model file. 
 	
 	build = modelroot.find('{'+my_namespaces['']+'}'+'build') # Passing in my_namespaces as the second param doesn't help
 	
 	for extobj in build:
-		print('1=====>', extobj.get('objectid'), extobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		#print('1=====>', extobj.get('objectid'), extobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
 		extobj.set("transform", basetag.find('transform').text)
 
 	addmodels = steps.findall('model')
@@ -97,7 +112,7 @@ def WriteCombinedFile(steps, file, newobjects):
 		newnode.set("objectid", newobj.get('id'))
 		trans = addmodels[index].find('transform').text
 		newnode.set("transform", trans)
-		print('2=====>', newobj.get('id'), newobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
+		#print('2=====>', newobj.get('id'), newobj.get('{'+'http://schemas.microsoft.com/3dmanufacturing/production/2015/06'+'}'+'UUID'))
 		
 		build.insert(len(build), newnode)		# Insert at the end
 		
@@ -109,35 +124,41 @@ def WriteCombinedFile(steps, file, newobjects):
 
 def ExportStep(key, value, stepfileout, input_scad):
 	cmd = openscadexec2 + " " + key + " " + value + " -o " + stepfileout + " " + input_scad
-	ret = os.system(cmd)
+	os.system(cmd)
 
 def ProcessStep(step, folder, models, extractall):
 	scad_tag = step.find('scad')
-	key = scad_tag.get('key')
-	value = scad_tag.get('value')
-	stepfileout = key + "_" + value + ".3mf"			# Temp file
-	input = GetSCADInputFiles(scad_tag)
-	ExportStep(key, value, stepfileout, input)
-	
-	# Now to extract all files to an empty temp directory.
-	
+	tmf_tag = step.find('threemf')
+
+	if scad_tag != None:
+		key = scad_tag.get('key')
+		value = scad_tag.get('value')
+		stepfileout = key + "_" + value + ".3mf"			# Temp file
+		input = GetSCADInputFiles(scad_tag)
+		ExportStep(key, value, stepfileout, input)
+	elif tmf_tag != None:
+		stepfileout = tmf_tag.get('file')
+		
 	if extractall:
+		# Now to extract all files to an empty temp directory.
+
 		with zipfile.ZipFile(stepfileout, 'r') as myzip:
 			myzip.extractall(path=folder)
 	
 		os.remove(stepfileout)
 	else:
-		# We now have a 3mf aka a zip file. We need to extract that.
+		# Extract just the one file from the 3mf aka a zip file.
 		
 		with zipfile.ZipFile(stepfileout, 'r') as myzip:
 			with myzip.open(hardcoded_modelpath) as myfile:
-				newobj = ExtractObject(myfile, len(models)+1, step.find('name').text)
+				newobj = ExtractObject(myfile, len(models)+2, step.find('name').text)
 				AddMetaDataGroup(newobj, step)
 				models.append(newobj)
 				
 		# Delete the 3mf file as we have got what we need.
 		
-		os.remove(stepfileout)
+		if scad_tag != None:
+			os.remove(stepfileout)
 
 		return 
 
@@ -177,7 +198,9 @@ def CopyThumbnail(root, dest):
 	shutil.copyfile(filename, dest + 'thumbnail.png')
 
 def UpdateRelsFile(file):
-	# Check the existing rels file
+	# Check the existing rels file. This just lists the type of files found inside the 3mf. Basically,
+	# a .model file and possibly now a png/jpg for the thumbnail.
+
 	found = False
 	
 	ET.register_namespace('', 'http://schemas.openxmlformats.org/package/2006/relationships')
