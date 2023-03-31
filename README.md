@@ -1,10 +1,10 @@
 # Smart3MF
 OpenSCAD exporter and 3MF file manipulator
 
-##Go from this:
+## Go from this:
 ![Quick render in OpenSCAD](/OpenSCAD.PNG)
 
-##To this:
+## To this:
 ![Screenshot inside PrusaSlicer with a single object showing exposed infill](/Prusa1.PNG)
 ![Screenshot inside PrusaSlicer showing objects and settings](/Prusa2.PNG)
 
