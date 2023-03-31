@@ -1,11 +1,11 @@
 # Smart3MF
-3MF file manipulator
+OpenSCAD exporter and 3MF file manipulator
 
-Go from this: 
-![Quick render in OpenSCAD](/assets/OpenSCAD.PNG)
+##Go from this:
+![Quick render in OpenSCAD](/OpenSCAD.PNG)
 
-To this:
-![Screenshot inside PrusaSlicer with a single object showing exposed infill](./Prusa1.PNG)
+##To this:
+![Screenshot inside PrusaSlicer with a single object showing exposed infill](/Prusa1.PNG)
 ![Screenshot inside PrusaSlicer showing objects and settings](/Prusa2.PNG)
 
 Why was this created?
