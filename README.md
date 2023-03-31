@@ -2,10 +2,10 @@
 3MF file manipulator
 
 Go from this: 
-![Quick render in OpenSCAD](/OpenSCAD.png)
+![Quick render in OpenSCAD](/assets/OpenSCAD.png)
 
 To this:
-![Screenshot inside PrusaSlicer with a single object showing exposed infill](/Prusa1.png)
+![Screenshot inside PrusaSlicer with a single object showing exposed infill](./Prusa1.png)
 ![Screenshot inside PrusaSlicer showing objects and settings](/Prusa2.png)
 
 Why was this created?
