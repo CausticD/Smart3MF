@@ -17,8 +17,8 @@ OpenSCAD exporter and 3MF file manipulator
 ### Whats the workflow?
 1) Create the geometry in OpenSCAD.
 2) Add the markup to an XML file.
-3) Export by running the Smart3MF python scrypt.
-4) Open up either Cura or PrusaSlicer
+3) Export by running the Smart3MF python script (setting mode to either Cura or Prusa)
+4) Open up in either Cura or PrusaSlicer
 
 ### Limitations:
 - Very limited testing, and only on Windows.
