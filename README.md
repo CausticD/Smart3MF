@@ -1,6 +1,13 @@
 # Smart3MF
 3MF file manipulator
 
+Go from this: 
+![Quick render in OpenSCAD](/OpenSCAD.png)
+
+To this:
+![Screenshot inside PrusaSlicer with a single object showing exposed infill](/Prusa1.png)
+![Screenshot inside PrusaSlicer showing objects and settings](/Prusa2.png)
+
 Why was this created?
 1) I wanted a way to export multiple models from a single OpenSCAD file and combine them into a single 3MF file. 
 2) I wanted to be able to override settings to specific models, set things as supports etc.
